@@ -1,7 +1,7 @@
 import time
 import json
 import re
-import random
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -11,11 +11,10 @@ from selenium.webdriver.support import expected_conditions as EC
 
 # --- CẤU HÌNH --- 
 INPUT_FILE = "product_links_raw.json"
-OUTPUT_FILE = "products_final_random_50.json"
-LIMIT = 50 
+OUTPUT_FILE = "products_final_all.json" # File kết quả bạn đang dùng
 
 # ==========================================
-# 🧱 PHẦN 1: CÁC HÀM XỬ LÝ SỐ LIỆU
+# 🧱 PHẦN 1: CÁC HÀM XỬ LÝ (GIỮ NGUYÊN)
 # ==========================================
 
 def text_to_number(raw_text):
@@ -36,12 +35,7 @@ def text_to_number(raw_text):
     except: pass
     return 0
 
-# ==========================================
-# 🕵️ PHẦN 2: CÁC HÀM CÀO DỮ LIỆU (WORKERS)
-# ==========================================
-
 def get_product_image(driver):
-    """Lấy link ảnh sản phẩm (img.w-full)"""
     try:
         img_elem = WebDriverWait(driver, 3).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "img.w-full"))
@@ -52,84 +46,55 @@ def get_product_image(driver):
             if src: src = src.split(",")[-1].strip().split(" ")[0]
         return src
     except: return "No Image"
+
 def get_web_price_and_unit(driver):
-    """
-    [CẬP NHẬT MỚI] Chiến thuật đa tầng để bắt giá web
-    """
     price = 0
-    unit = "Hộp/Chai" # Mặc định
-    
+    unit = "Hộp/Chai"
     try:
-        # --- 1. LẤY UNIT TỪ BUTTON (Ưu tiên cao nhất) ---
         try:
-            active_unit_btn = driver.find_element(By.CSS_SELECTOR, "button.border-primary-500 span")
+            active_unit_btn = driver.find_element(By.CSS_SELECTOR, "button[class*='border-primary-500'] span")
             unit = active_unit_btn.text.strip()
         except: pass
 
-        # --- 2. LẤY GIÁ TIỀN (CHIẾN THUẬT ĐA TẦNG) ---
         raw_price_text = ""
-        
-        # Cách A: Tìm theo Class đặc trưng (Nhanh nhất)
-        # Thêm nhiều class phổ biến mà web hay dùng cho giá
         price_selectors = [
             ".text-primary-500.font-bold", 
             ".text-2xl.font-bold",
-            "div[class*='text-primary-500']", # Bất kỳ div nào có màu cam chủ đạo
-            ".product-price" # Class chung (nếu có)
+            "div[class*='text-primary-500']",
+            ".product-price",
+            "//div[contains(text(), '₫')]"
         ]
         
         for selector in price_selectors:
             try:
-                elems = driver.find_elements(By.CSS_SELECTOR, selector)
+                if selector.startswith("//"):
+                    elems = driver.find_elements(By.XPATH, selector)
+                else:
+                    elems = driver.find_elements(By.CSS_SELECTOR, selector)
+                
                 for el in elems:
-                    # Kiểm tra kỹ: Phải có số và phải có ký hiệu tiền
                     txt = el.text.strip()
-                    if re.search(r'\d', txt) and ('₫' in txt or 'đ' in txt.lower()):
+                    if re.search(r'\d', txt) and any(s in txt.lower() for s in ['₫', 'đ', 'vnđ']) and len(txt) < 50:
                         raw_price_text = txt
                         break
                 if raw_price_text: break
             except: continue
 
-        # Cách B: (Dự phòng) Nếu Cách A thua, tìm mọi thẻ chứa ký hiệu '₫'
-        if not raw_price_text:
-            try:
-                # Tìm thẻ chứa '₫' nhưng text không quá dài (tránh lấy nhầm bài văn mô tả)
-                potential_prices = driver.find_elements(By.XPATH, "//*[contains(text(), '₫') and string-length(text()) < 30]")
-                for p in potential_prices:
-                    # Ưu tiên lấy thẻ có chứa số
-                    if re.search(r'\d', p.text):
-                        raw_price_text = p.text.strip()
-                        break # Lấy cái đầu tiên tìm thấy (thường là giá chính)
-            except: pass
-
-        # --- 3. XỬ LÝ SỐ LIỆU (REGEX CLEANING) ---
         if raw_price_text:
-            # Loại bỏ mọi thứ không phải là số (nhưng giữ lại cấu trúc để tách đơn vị nếu cần)
-            # Ví dụ: "1.250.000đ / Hộp"
-            
             clean_str = raw_price_text.replace(".", "").replace(",", "")
-            
-            # Regex tìm nhóm số lớn nhất (giá tiền thường là số to nhất)
             matches = re.findall(r'\d+', clean_str)
             if matches:
-                # Lấy số dài nhất hoặc nối lại (đề phòng trường hợp lỗi font)
-                # Thường giá tiền là số nguyên liền mạch sau khi bỏ dấu chấm
                 longest_num = max(matches, key=len) 
                 price = int(longest_num)
 
-            # (Fallback) Nếu bước 1 chưa lấy được Unit thì thử cắt từ chuỗi giá
             if "/" in raw_price_text and unit == "Hộp/Chai":
                 parts = raw_price_text.split("/")
                 if len(parts) > 1:
-                    unit = parts[1].strip().split()[0] # Lấy chữ đầu tiên sau dấu /
-
-    except Exception as e:
-        # print(f"Lỗi lấy giá: {e}") 
-        pass
-        
+                    unit = parts[1].strip().split()[0]
+    except: pass
     return price, unit
+
 def hunt_price_in_comments(driver):
-    """Săn giá trong comment Admin"""
     candidates = []
     try:
         try:
@@ -140,7 +105,6 @@ def hunt_price_in_comments(driver):
 
         comment_blocks = driver.find_elements(By.XPATH, "//div[@id='comment']//div[contains(@class, 'whitespace-break-spaces')]")
         target_text = ""
-        
         for cmt in comment_blocks:
             text = cmt.text.strip()
             if any(x in text.lower() for x in ["pharmacity", "chào anh/chị", "chào bạn"]):
@@ -155,8 +119,7 @@ def hunt_price_in_comments(driver):
             if clean_num.isdigit():
                 val = int(clean_num)
                 if val > 100: candidates.append(val)
-    except Exception: pass
-
+    except: pass
     if candidates: return max(candidates)
     return 0
 
@@ -199,7 +162,6 @@ def get_product_description(driver):
     return {"Nội dung đầy đủ": full_text, "Thông số tách": details}
 
 def get_reviews(driver):
-    """Lấy bình luận (Bao gồm cả Admin)"""
     reviews = []
     try:
         element = driver.find_element(By.ID, "comment")
@@ -214,10 +176,6 @@ def get_reviews(driver):
     except: pass
     return reviews
 
-# ==========================================
-# 🚀 PHẦN 3: HÀM QUẢN LÝ (CONTROLLER)
-# ==========================================
-
 def scrape_product(driver, link_data):
     url = link_data.get("url") or link_data.get("URL") or link_data.get("link")
     category = link_data.get("category") or link_data.get("Danh mục") or "Unknown"
@@ -228,7 +186,7 @@ def scrape_product(driver, link_data):
     try: WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), '₫')]")))
     except: pass
 
-    # 1. LẤY THÔNG TIN CƠ BẢN
+    # Lấy thông tin
     name = "Unknown"
     try: name = driver.find_element(By.TAG_NAME, "h1").text.strip()
     except: pass
@@ -239,13 +197,9 @@ def scrape_product(driver, link_data):
     desc_data = get_product_description(driver)
     reviews = get_reviews(driver)
     image_url = get_product_image(driver)
-
-    # 2. LOGIC LẤY GIÁ
-    # Sử dụng hàm đơn giản get_web_price_and_unit thay vì get_price_details
     price, unit = get_web_price_and_unit(driver)
     source = "Web"
     
-    # Nếu Web không có giá -> Săn Comment Admin
     if price == 0:
         if "Thuốc" in category or "Dược" in category:
             hunted_price = hunt_price_in_comments(driver)
@@ -253,19 +207,16 @@ def scrape_product(driver, link_data):
                 price = hunted_price
                 source = "Comment"
                 unit = "Hộp/Chai"
-            else:
-                source = "Không tìm thấy"
-        else:
-            source = "Không tìm thấy "
+            else: source = "Không tìm thấy"
+        else: source = "Không tìm thấy"
 
-    # 3. ĐÓNG GÓI JSON
     product = {
         "CATEGORY": category,
         "ID": pid,
         "PRODUCT_NAME": name,
-        "PRICE": price,           # Giá bán
+        "PRICE": price,
         "PRICE_SOURCE": source,
-        "UNIT": unit,             # Đơn vị tính
+        "UNIT": unit,
         "IMAGE": image_url,
         "SOLE_COUNT": sold,
         "LIKES": likes,
@@ -280,50 +231,108 @@ def scrape_product(driver, link_data):
     return product
 
 # ==========================================
-# 🏁 PHẦN 4: CHƯƠNG TRÌNH CHÍNH
+# 🏁 PHẦN 4: CHƯƠNG TRÌNH CHÍNH (SMART RESUME)
 # ==========================================
 
-def main():
-    try:
-        with open(INPUT_FILE, "r", encoding="utf-8") as f: 
-            all_links = json.load(f)
-    except: 
-        print(f"❌ Lỗi: Không tìm thấy file {INPUT_FILE}")
-        return
-
-    # Random 50 sản phẩm
-    if len(all_links) > LIMIT:
-        print(f"🎲 Đang bốc ngẫu nhiên {LIMIT} sản phẩm...")
-        links_to_run = random.sample(all_links, LIMIT)
-    else:
-        links_to_run = all_links
-
+def init_driver():
+    """Hàm bật trình duyệt"""
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-notifications")
     options.add_argument("--headless") 
     options.add_argument("--log-level=3") 
-    
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+def main():
+    # 1. Load danh sách link gốc
+    try:
+        with open(INPUT_FILE, "r", encoding="utf-8") as f: 
+            all_links = json.load(f)
+        total_links = len(all_links)
+    except: 
+        print(f" Lỗi: Không tìm thấy file {INPUT_FILE}")
+        return
+
+    # 2. Load dữ liệu ĐÃ LÀM (nếu có)
     results = []
+    processed_urls = set() # Dùng set để tìm kiếm cho nhanh
     
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                results = json.load(f)
+                # Lưu các URL đã làm vào set
+                for p in results:
+                    if "URL" in p: processed_urls.add(p["URL"])
+            print(f" Đã tìm thấy file cũ: {len(results)} sản phẩm đã xong.")
+        except:
+            print(" File cũ bị lỗi hoặc rỗng, sẽ chạy lại từ đầu.")
+            results = []
+
+    # 3. Lọc ra các link CHƯA LÀM
+    links_to_run = []
+    for link in all_links:
+        url = link.get("url") or link.get("URL")
+        if url and url not in processed_urls:
+            links_to_run.append(link)
+            
+    if not links_to_run:
+        print(" TẤT CẢ SẢN PHẨM ĐÃ ĐƯỢC CÀO XONG! KHÔNG CẦN CHẠY NỮA.")
+        return
+
+    print(f" BẮT ĐẦU CHIẾN DỊCH: Còn {len(links_to_run)}/{total_links} sản phẩm chưa cào.")
+    print("---------------------------------------------------")
+
+    driver = init_driver()
+    
+    # 4. Chạy vòng lặp
     for i, link in enumerate(links_to_run):
         try:
+            # Hiển thị tiến độ thực tế
             print(f"[{i+1}/{len(links_to_run)}] ", end="")
-            p = scrape_product(driver, link)
-            if p: results.append(p)
-        except Exception as e:
-            print(f"❌ Lỗi: {e}")
+            
+            # --- CƠ CHẾ AUTO-RESET DRIVER (Mỗi 100 cái reset 1 lần để chống tràn RAM) ---
+            if i > 0 and i % 100 == 0:
+                print(f"\n  [RAM CLEANER] Khởi động lại trình duyệt...")
+                try: driver.quit()
+                except: pass
+                time.sleep(2)
+                driver = init_driver()
 
-        if (i+1) % 10 == 0:
+            try:
+                p = scrape_product(driver, link)
+                if p: 
+                    results.append(p)
+                    processed_urls.add(p["URL"]) # Đánh dấu đã làm
+            except Exception as e:
+                # --- CƠ CHẾ HỒI SINH KHI CRASH ---
+                if "invalid session id" in str(e).lower() or "disconnected" in str(e).lower():
+                    print(f"\n  TRÌNH DUYỆT BỊ SẬP! Đang hồi sinh...")
+                    try: driver.quit()
+                    except: pass
+                    time.sleep(3)
+                    driver = init_driver()
+                    # Thử lại 1 lần nữa
+                    print(f" Đang thử lại...")
+                    p = scrape_product(driver, link)
+                    if p: results.append(p)
+                else:
+                    print(f" Lỗi: {e}")
+
+        except Exception as e:
+            print(f" Lỗi hệ thống: {e}")
+
+        # --- LƯU LIÊN TỤC (QUAN TRỌNG) ---
+        # Cứ xong 5 cái là lưu ngay, không chờ lâu
+        if (i+1) % 5 == 0:
             with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
                 json.dump(results, f, ensure_ascii=False, indent=4)
                 
     driver.quit()
     
+    # Lưu lần cuối
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
-    print(f"\n🎉 HOÀN TẤT! File kết quả: {OUTPUT_FILE}")
+    print(f"\n HOÀN TẤT TOÀN BỘ! Dữ liệu tại: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
