@@ -37,5 +37,11 @@ CODING\products_missing_price.json: file json chứa các sản phẩm có giá 
 
 toMONGODB.py: chuyển từ file json thành database MONGODB để thực hiện truy vấn phân tích 
 
+CODING\fix_unknown_ids.py: xóa các sản phẩm có id là unknown 
+
+CODING\fix_duplicates.py: xử lý các sản phẩm trùng lặp
+
+CODING\visualize_products.ipynb: TRỰC QUAN HÓA BỘ DỮ LIỆU 
+
 
 lúc trước đã lấy được file gồm 6523 sản phẩm. nhưng có hơn 3500 sản phẩm ko có giá, bây giờ đã tách các sản phẩm có giá =0 giá 1 file json khác, bây sẽ chạy hàm tìm giá đã cải tiến lại trên cả 2 file có giá và thiếu giá, vì trong file thiếu giá, có thể hôm trước chạy thì web chưa cập nhất giá vào, mà hôm nay web đã cập nhất giá lại vào các sản phẩm đó 
