@@ -14,7 +14,7 @@ INPUT_FILE = "product_links_raw.json"
 OUTPUT_FILE = "products_final_all.json" # File kết quả bạn đang dùng
 
 # ==========================================
-# 🧱 PHẦN 1: CÁC HÀM XỬ LÝ (GIỮ NGUYÊN)
+# 🧱 PHẦN 1: CÁC HÀM XỬ LÝ 
 # ==========================================
 
 def text_to_number(raw_text):
@@ -146,7 +146,7 @@ def get_like_count(driver):
         return text_to_number(like_elem.text)
     except: return 0
 
-def get_product_description(driver):
+def get_product_description(driver):        
     details = {}
     full_text = ""
     try:
@@ -226,12 +226,12 @@ def scrape_product(driver, link_data):
         "URL": url
     }
     
-    price_display = f"{price}đ" if price > 0 else "❌"
-    print(f"✅ {name[:15]}... | {price_display} | Unit: {unit} | {source}")
+    price_display = f"{price}đ" if price > 0 else ""
+    print(f" {name[:15]}... | {price_display} | Unit: {unit} | {source}")
     return product
 
 # ==========================================
-# 🏁 PHẦN 4: CHƯƠNG TRÌNH CHÍNH (SMART RESUME)
+#  PHẦN 4: CHƯƠNG TRÌNH CHÍNH (SMART RESUME)
 # ==========================================
 
 def init_driver():

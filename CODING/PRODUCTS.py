@@ -12,7 +12,7 @@ OUTPUT_FILE = "product_links_raw.json"
 
 # --- HÀM 1: TẢI SẢN PHẨM (CUỘN + BẤM NÚT "XEM THÊM") ---
 def load_more_products(driver):
-    print("   🖱️ Đang tải sản phẩm...", end="", flush=True)
+    print("    Đang tải sản phẩm...", end="", flush=True)
     
     no_change_count = 0
     last_height = driver.execute_script("return document.body.scrollHeight")
@@ -44,7 +44,7 @@ def load_more_products(driver):
             no_change_count += 1
             # Nếu 3 lần liên tiếp không có gì mới -> Hết trang
             if no_change_count >= 3:
-                print("\n   ✅ Đã tải hết trang.")
+                print("\n    Đã tải hết trang.")
                 break
         else:
             no_change_count = 0
@@ -54,8 +54,8 @@ def load_more_products(driver):
 
 # --- HÀM 2: CÀO LINK TỪ DANH MỤC ---
 def get_links_from_category(driver, category_name, category_url):
-    print(f"\n📂 Đang xử lý: {category_name}")
-    print(f"   🔗 Link: {category_url}")
+    print(f"\n Đang xử lý: {category_name}")
+    print(f"    Link: {category_url}")
     
     try:
         driver.get(category_url)
@@ -88,11 +88,11 @@ def get_links_from_category(driver, category_name, category_url):
             except:
                 continue
         
-        print(f"   -> 🎉 Tìm thấy {len(links)} sản phẩm.")
+        print(f"   ->  Tìm thấy {len(links)} sản phẩm.")
         return links
 
     except Exception as e:
-        print(f"   ❌ Lỗi tại danh mục này: {e}")
+        print(f"    Lỗi tại danh mục này: {e}")
         return []
 
 # --- MAIN ---
@@ -101,7 +101,7 @@ def main():
         df = pd.read_csv(INPUT_FILE)
         categories = df.to_dict('records')
     except:
-        print(f"❌ Không tìm thấy file {INPUT_FILE}")
+        print(f" Không tìm thấy file {INPUT_FILE}")
         return
 
     # Mở trình duyệt
@@ -132,8 +132,8 @@ def main():
 
     driver.quit()
     print("\n" + "="*40)
-    print(f"🏁 TỔNG KẾT NGÀY 2: {len(all_results)} LINK SẢN PHẨM.")
-    print(f"💾 File kết quả: {OUTPUT_FILE}")
+    print(f" TỔNG KẾT NGÀY 2: {len(all_results)} LINK SẢN PHẨM.")
+    print(f" File kết quả: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

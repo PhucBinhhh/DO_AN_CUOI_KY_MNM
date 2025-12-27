@@ -45,13 +45,13 @@ def main():
         print("❌ Không tìm thấy file JSON.")
         return
 
-    print(f"📂 Đang đọc file: {FILE_PATH}...")
+    print(f" Đang đọc file: {FILE_PATH}...")
     with open(FILE_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     count_fixed = 0
     
-    print("🚀 Đang quét comment để sửa lại Unit...")
+    print(" Đang quét comment để sửa lại Unit...")
     
     for p in data:
         current_unit = p.get("UNIT", "")
@@ -70,7 +70,7 @@ def main():
             if found_unit:
                 # Nếu tìm được unit chuẩn và nó khác unit cũ
                 if found_unit != current_unit:
-                    # print(f"🔧 {p['PRODUCT_NAME'][:20]}...: {price}đ | {current_unit} -> {found_unit}")
+                    # print(f" {p['PRODUCT_NAME'][:20]}...: {price}đ | {current_unit} -> {found_unit}")
                     p["UNIT"] = found_unit
                     
                     # Nếu Unit cũ có chữ "Admin", ta cũng nên sửa lại nguồn giá cho gọn
@@ -89,8 +89,8 @@ def main():
         json.dump(data, f, ensure_ascii=False, indent=4)
 
     print("-" * 40)
-    print(f"✅ HOÀN TẤT! Đã sửa đơn vị tính cho {count_fixed} sản phẩm.")
-    print(f"💾 Dữ liệu đã được cập nhật vào file: {FILE_PATH}")
+    print(f" HOÀN TẤT! Đã sửa đơn vị tính cho {count_fixed} sản phẩm.")
+    print(f" Dữ liệu đã được cập nhật vào file: {FILE_PATH}")
     print("-" * 40)
 
 if __name__ == "__main__":

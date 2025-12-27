@@ -39,7 +39,7 @@ VALID_ROOTS = [
 ]
 
 def get_categories():
-    print("🚀 Đang khởi động trình duyệt...")
+    print(" Đang khởi động trình duyệt...")
     options = webdriver.ChromeOptions()
     options.add_argument("--disable-notifications")
     options.add_argument("--start-maximized")
@@ -48,7 +48,7 @@ def get_categories():
     categories = []
     
     try:
-        print(f"🔗 Đang truy cập: {TARGET_URL}")
+        print(f" Đang truy cập: {TARGET_URL}")
         driver.get(TARGET_URL)
         time.sleep(5) 
         
@@ -91,13 +91,13 @@ def get_categories():
                             "URL": link
                         })
                         seen_urls.add(link)
-                        print(f"   ✅ Đã lấy: {text} | Link: {path}")
+                        print(f" Đã lấy: {text} | Link: {path}")
 
             except Exception as e:
                 continue
 
     except Exception as e:
-        print(f"❌ Lỗi: {e}")
+        print(f" Lỗi: {e}")
     finally:
         driver.quit()
         
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     if data:
         df = pd.DataFrame(data)
         
-        print(f"\n📊 Tìm thấy ban đầu: {len(df)} dòng.")
+        print(f"\n Tìm thấy ban đầu: {len(df)} dòng.")
 
         # --- BƯỚC LÀM SẠCH QUAN TRỌNG ---
         
@@ -130,9 +130,11 @@ if __name__ == "__main__":
         # Lưu file
         df.to_csv(OUTPUT_FILE, index=False, encoding="utf-8-sig")
         
-        print(f"🧹 Đã dọn dẹp các link rác (?utm_source).")
-        print(f"🎉 KẾT QUẢ CUỐI CÙNG: {len(df)} danh mục chuẩn.")
+        print(f" Đã dọn dẹp các link rác (?utm_source).")
+        print(f" KẾT QUẢ CUỐI CÙNG: {len(df)} danh mục chuẩn.")
         print("-" * 30)
         print(df) # In toàn bộ ra để ngắm nghía
     else:
-        print("\n⚠️ Không tìm thấy danh mục.")
+        print("\n Không tìm thấy danh mục.")
+        
+        

@@ -7,10 +7,10 @@ FILE_PATH = r"products_final_all.json"
 def fix_specific_units():
     # 1. Kiểm tra file
     if not os.path.exists(FILE_PATH):
-        print(f"❌ Lỗi: Không tìm thấy file tại {FILE_PATH}")
+        print(f" Lỗi: Không tìm thấy file tại {FILE_PATH}")
         return
 
-    print(f"📂 Đang đọc file: {FILE_PATH}...")
+    print(f" Đang đọc file: {FILE_PATH}...")
     
     try:
         # 2. Đọc dữ liệu
@@ -36,7 +36,7 @@ def fix_specific_units():
             if target_name in name:
                 # Chỉ sửa nếu Unit hiện tại chưa phải là Hộp
                 if p["UNIT"] != "Hộp":
-                    print(f"🔧 Đã sửa: {name} | {p['UNIT']} -> Hộp")
+                    print(f" Đã sửa: {name} | {p['UNIT']} -> Hộp")
                     p["UNIT"] = "Hộp"
                     count_follitrope += 1
 
@@ -45,13 +45,13 @@ def fix_specific_units():
             json.dump(data, f, ensure_ascii=False, indent=4)
 
         print("-" * 50)
-        print("✅ ĐÃ SỬA XONG!")
-        print(f"🔹 Đã đổi 'Bom' -> 'Bơm tiêm': {count_bom} sản phẩm")
-        print(f"🔹 Đã sửa Unit cho 'Follitrope...': {count_follitrope} sản phẩm")
+        print(" ĐÃ SỬA XONG!")
+        print(f" Đã đổi 'Bom' -> 'Bơm tiêm': {count_bom} sản phẩm")
+        print(f" Đã sửa Unit cho 'Follitrope...': {count_follitrope} sản phẩm")
         print("-" * 50)
 
     except Exception as e:
-        print(f"❌ Có lỗi xảy ra: {e}")
+        print(f" Có lỗi xảy ra: {e}")
 
 if __name__ == "__main__":
     fix_specific_units()

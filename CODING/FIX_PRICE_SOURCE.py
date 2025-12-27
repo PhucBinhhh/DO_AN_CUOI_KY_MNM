@@ -7,10 +7,10 @@ FILE_PATH = r"products_final_all.json"
 def clean_price_source():
     # 1. Kiểm tra file
     if not os.path.exists(FILE_PATH):
-        print(f"❌ Lỗi: Không tìm thấy file tại {FILE_PATH}")
+        print(f" Lỗi: Không tìm thấy file tại {FILE_PATH}")
         return
 
-    print(f"📂 Đang đọc file: {FILE_PATH}...")
+    print(f" Đang đọc file: {FILE_PATH}...")
     
     try:
         # 2. Đọc dữ liệu cũ
@@ -43,12 +43,12 @@ def clean_price_source():
             json.dump(data, f, ensure_ascii=False, indent=4)
             
         print("-" * 40)
-        print(f"✅ ĐÃ XONG! Đã sửa đổi {count_modified} sản phẩm.")
-        print(f"💾 File đã được lưu đè lên: {FILE_PATH}")
+        print(f" ĐÃ XONG! Đã sửa đổi {count_modified} sản phẩm.")
+        print(f" File đã được lưu đè lên: {FILE_PATH}")
         print("-" * 40)
 
     except Exception as e:
-        print(f"❌ Có lỗi xảy ra: {e}")
+        print(f" Có lỗi xảy ra: {e}")
 
 if __name__ == "__main__":
     clean_price_source()
